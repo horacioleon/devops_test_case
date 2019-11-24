@@ -36,12 +36,6 @@
         }
 
         server {
-           listen 80;
-           server_name odoo.mycompany.com;
-           rewrite ^(.*) https://$host$1 permanent;
-        }
-
-        server {
          listen 8069;
          server_name localhost;
          proxy_read_timeout 720s;
