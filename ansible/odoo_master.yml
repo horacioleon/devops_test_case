@@ -15,7 +15,7 @@
 
   - name: Create configuration file /opt/odoo/config/odoo.conf
     blockinfile:
-      path: /opt/odoo/config/odoo_master.conf
+      path: /opt/odoo/config/odoo.conf
       create: yes
       block: |
         [options]
