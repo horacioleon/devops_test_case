@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#  to run the script please istall nrpe firts (MacOs: brew install nrpe)
+#  to run the script please install nrpe firts (MacOs: brew install nrpe)
 
 import subprocess
 import os
