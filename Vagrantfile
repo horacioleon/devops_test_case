@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
     odoo02.vm.hostname = "odoo02.local.com"
     odoo02.vm.network "private_network", ip: "192.168.0.21"
     odoo02.vm.provision "ansible" do |ansible|
-      ansible.playbook = "ansible/odoo_master.yml"
+      ansible.playbook = "ansible/odoo.yml"
     end
     config.vm.provider "virtualbox" do |v|
       v.memory = 1024
@@ -56,7 +56,7 @@ Vagrant.configure("2") do |config|
     odoo03.vm.hostname = "odoo03.local.com"
     odoo03.vm.network "private_network", ip: "192.168.0.22"
     odoo03.vm.provision "ansible" do |ansible|
-      ansible.playbook = "ansible/odoo_master.yml"
+      ansible.playbook = "ansible/odoo.yml"
     end
     config.vm.provider "virtualbox" do |v|
       v.memory = 1024

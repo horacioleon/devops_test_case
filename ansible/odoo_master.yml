@@ -6,6 +6,7 @@
   tasks:
 
   - include_tasks: common.yml
+  
   - include_tasks: odoo_common.yml
 
   - name: Copy odoo addons
