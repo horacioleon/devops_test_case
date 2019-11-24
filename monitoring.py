@@ -1,4 +1,6 @@
 #!/usr/bin/python
+#
+#  to run the script please istall nrpe firts (MacOs: brew install nrpe)
 
 import subprocess
 import os
@@ -26,7 +28,7 @@ vm_list = {"postgres01": "192.168.0.30",
        "odoo03": "192.168.0.22" }
 
 checks_list = {"check_disk":"check_disk --args '-c 5 -w 15 -p / -u GB'",
-               "check_load":"check_load --args '-c 2,2,2 -w 1,1,1'",
+               "check_load":"check_load --args '-c 2,2,2 -w 1,1,1'"
               }
 
 running_vms = str(run_command("vagrant global-status --prune | awk '/running/ {print $2}' |tr '\n' ';' | sed 's/;$//'"))

@@ -18,11 +18,6 @@
       enabled: yes
     tags: service
 
-#  - name: Remove file /etc/nginx/nginx.conf
-#    file:
-#      path: /etc/nginx/nginx.conf
-#      state: absent
-
   - name: Create configuration file /etc/nginx/conf.d/odoo.conf
     blockinfile:
       path: /etc/nginx/conf.d/odoo.conf
@@ -31,12 +26,15 @@
         #odoo server
         upstream odoo {
          server 192.168.0.20:8069;
+         server 192.168.0.21:8069;
+         server 192.168.0.22:8069;
         }
         upstream odoochat {
          server 192.168.0.20:8072;
+         server 192.168.0.21:8072;
+         server 192.168.0.22:8072;
         }
 
-        # http -> https
         server {
            listen 80;
            server_name odoo.mycompany.com;
@@ -89,6 +87,3 @@
       enabled: yes
     register: service_enable
     tags: service
-
-  - name: restart nginx01
-    command: service nginx restart

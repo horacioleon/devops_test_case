@@ -13,7 +13,7 @@
       src: odoo/
       dest: /opt/odoo/addons
 
-  - name: Create configuration file /opt/odoo/config/odoo_master.conf
+  - name: Create configuration file /opt/odoo/config/odoo.conf
     blockinfile:
       path: /opt/odoo/config/odoo_master.conf
       create: yes
@@ -63,7 +63,7 @@
             ports:
               - "8069:8069"
               - "8072:8072"
-            command: odoo --config=/etc/odoo/odoo_master.conf
+            command: odoo --config=/etc/odoo/odoo.conf
             volumes:
               - ./config:/etc/odoo
               - ./addons:/mnt/addons
