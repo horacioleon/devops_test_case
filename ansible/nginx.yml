@@ -18,6 +18,57 @@
       enabled: yes
     tags: service
 
+
+  - name: Remove file /etc/nginx/nginx.conf
+    file:
+      path: /etc/nginx/nginx.conf
+      state: absent
+
+  - name: Create configuration file /etc/nginx/nginx.conf
+    blockinfile:
+      path: /etc/nginx/nginx.conf
+      create: yes
+      block: |
+        # For more information on configuration, see:
+        #   * Official English Documentation: http://nginx.org/en/docs/
+        #   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+        user nginx;
+        worker_processes auto;
+        error_log /var/log/nginx/error.log;
+        pid /run/nginx.pid;
+
+        # Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+        include /usr/share/nginx/modules/*.conf;
+
+        events {
+            worker_connections 1024;
+        }
+
+        http {
+            log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                              '$status $body_bytes_sent "$http_referer" '
+                              '"$http_user_agent" "$http_x_forwarded_for"';
+
+            access_log  /var/log/nginx/access.log  main;
+
+            sendfile            on;
+            tcp_nopush          on;
+            tcp_nodelay         on;
+            keepalive_timeout   65;
+            types_hash_max_size 2048;
+
+            include             /etc/nginx/mime.types;
+            default_type        application/octet-stream;
+
+            # Load modular configuration files from the /etc/nginx/conf.d directory.
+            # See http://nginx.org/en/docs/ngx_core_module.html#include
+            # for more information.
+            include /etc/nginx/conf.d/*.conf;
+
+
+        }
+
   - name: Create configuration file /etc/nginx/conf.d/odoo.conf
     blockinfile:
       path: /etc/nginx/conf.d/odoo.conf
@@ -25,59 +76,51 @@
       block: |
         #odoo server
         upstream odoo {
-         server 192.168.0.20:8069;
-         server 192.168.0.21:8069;
-         server 192.168.0.22:8069;
+           server 192.168.0.20:8069;
+           #server 192.168.0.21:8069;
+           #server 192.168.0.22:8069;
         }
         upstream odoochat {
-         server 192.168.0.20:8072;
-         server 192.168.0.21:8072;
-         server 192.168.0.22:8072;
+           server 192.168.0.20:8072;
+           #server 192.168.0.21:8072;
+           #server 192.168.0.22:8072;
         }
 
         server {
-           listen 80;
-           server_name odoo.mycompany.com;
-           rewrite ^(.*) https://$host$1 permanent;
-        }
+            listen       80 default_server;
+            listen       [::]:80 default_server;
+            server_name  _;
 
-        server {
-         listen 8069;
-         server_name localhost;
-         proxy_read_timeout 720s;
-         proxy_connect_timeout 720s;
-         proxy_send_timeout 720s;
+            root        /usr/share/nginx/html;
+            index       index.html index.htm;
+            access_log  /var/log/nginx/odoo-mydomain-local.access.log;
+            error_log   /var/log/nginx/odoo-mydomain-local.error.log;
 
-         # Add Headers for odoo proxy mode
-         proxy_set_header X-Forwarded-Host $host;
-         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-         proxy_set_header X-Forwarded-Proto $scheme;
-         proxy_set_header X-Real-IP $remote_addr;
+            location / {
+                proxy_pass  http://odoo;
+                # force timeouts if the backend dies
+                proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+                proxy_redirect off;
 
-         # log
-         access_log /var/log/nginx/odoo.access.log;
-         error_log /var/log/nginx/odoo.error.log;
+                # set headers
+                proxy_set_header    Host            $host;
+                proxy_set_header    X-Real-IP       $remote_addr;
+                proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header    X-Forwarded-Proto https;
+            }
 
-         # Redirect longpoll requests to odoo longpolling port
-         location /longpolling {
-         proxy_pass http://odoochat;
-         }
+            # Redirect longpoll requests to odoo longpolling port
+            location /longpolling {
+                proxy_pass http://odoochat;
+            }
 
-         # Redirect requests to odoo backend server
-         location / {
-           proxy_redirect off;
-           proxy_pass http://odoo;
-         }
-
-         location ~* /web/static/ {
-           proxy_cache_valid 200 90m;
-           proxy_buffering    on;
-           expires 864000;
-           proxy_pass http://odoo;
-         }
-         # common gzip
-         gzip_types text/css text/scss text/plain text/xml application/xml application/json application/javascript;
-         gzip on;
+            # cache some static data in memory for 0mins
+            location ~* /web/static/ {
+                proxy_cache_valid 200 60m;
+                proxy_buffering on;
+                expires 864000;
+                proxy_pass http://odoo;
+            }
         }
 
   - name: Start service nginx
