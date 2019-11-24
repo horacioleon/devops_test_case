@@ -114,7 +114,7 @@
                 proxy_pass http://odoochat;
             }
 
-            # cache some static data in memory for 0mins
+            # cache static data 
             location ~* /web/static/ {
                 proxy_cache_valid 200 60m;
                 proxy_buffering on;
