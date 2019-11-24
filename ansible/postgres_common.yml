@@ -1,0 +1,22 @@
+- name: "Install Postgresql repository"
+  yum:
+    name: https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm
+    state: latest
+  tags: utils, update, packages
+
+
+- name: Install Postgresql Server
+  yum:
+    name:
+      - postgresql10-server
+      - postgresql10-contrib
+      - postgresql10
+    state: latest
+  tags: packages
+
+- name: Install PostgreSQL database adapter for Python
+  yum:
+    name:
+      - python-psycopg2
+    state: latest
+  tags: packages

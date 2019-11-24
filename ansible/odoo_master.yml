@@ -1,0 +1,81 @@
+---
+- hosts: all
+  become: True
+  gather_facts: True
+
+  tasks:
+
+  - include_tasks: common.yml
+  - include_tasks: odoo_common.yml
+
+  - name: Copy odoo addons
+    copy:
+      src: odoo/
+      dest: /opt/odoo/addons
+
+  - name: Create configuration file /opt/odoo/config/odoo_master.conf
+    blockinfile:
+      path: /opt/odoo/config/odoo_master.conf
+      create: yes
+      block: |
+        [options]
+        addons_path = /mnt/addons
+        admin_passwd = admin
+        log_level = debug
+        proxy_mode = True
+        without_demo = False
+        db_name = odoo
+        db_host = 192.168.0.30
+        db_port = 5432
+        db_user = odoo
+        db_password = odoo
+        workers = 4
+        session_store_db = odoo_session
+        server_wide_modules = base,web,crm,base_session_store_psql
+
+
+  - name: Create configuration file /opt/odoo/docker-compose-init.yml
+    blockinfile:
+      path: /opt/odoo/docker-compose-init.yml
+      create: yes
+      block: |
+        version: '2'
+        services:
+          web:
+            image: odoo:12.0
+            ports:
+              - "8069:8069"
+              - "8072:8072"
+            command: odoo --init all --stop-after-init --config=/etc/odoo/odoo.conf
+            volumes:
+              - ./config:/etc/odoo
+              - ./addons:/mnt/addons
+
+  - name: Create configuration file /opt/odoo/docker-compose.yml
+    blockinfile:
+      path: /opt/odoo/docker-compose.yml
+      create: yes
+      block: |
+        version: '2'
+        services:
+          web:
+            image: odoo:12.0
+            ports:
+              - "8069:8069"
+              - "8072:8072"
+            command: odoo --config=/etc/odoo/odoo_master.conf
+            volumes:
+              - ./config:/etc/odoo
+              - ./addons:/mnt/addons
+
+  - name: Create start script for odoo master
+    blockinfile:
+      path: /opt/odoo/start_odoo.sh
+      create: yes
+      block: |
+        docker-compose -f /opt/odoo/docker-compose-init.yml up
+        sleep 10
+        docker-compose -f /opt/odoo/docker-compose.yml up -d
+
+  - name: Start odoo master
+    command: sh /opt/odoo/start_odoo.sh

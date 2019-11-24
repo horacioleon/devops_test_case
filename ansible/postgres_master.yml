@@ -1,0 +1,124 @@
+---
+- hosts: all
+  become: True
+  gather_facts: True
+
+  tasks:
+
+  - include_tasks: common.yml
+
+  - include_tasks: postgres_common.yml
+
+  - name: Initialize the database
+    command: /usr/pgsql-10/bin/postgresql-10-setup initdb
+
+  - name: Remove file /var/lib/pgsql/10/data/postgresql.conf
+    file:
+      path: /var/lib/pgsql/10/data/postgresql.conf
+      state: absent
+
+  - name: Create configuration file /var/lib/pgsql/10/data/postgresql.conf
+    blockinfile:
+      path: /var/lib/pgsql/10/data/postgresql.conf
+      create: yes
+      owner: postgres
+      group: postgres
+      mode: 0600
+      block: |
+        listen_addresses = '*'
+        port = 5432
+        ssl = off
+        max_connections = 100
+        shared_buffers = 128MB
+        dynamic_shared_memory_type = posix
+        log_destination = 'stderr'
+        logging_collector = on
+        log_directory = 'log'
+        log_filename = 'postgresql-%a.log'
+        log_truncate_on_rotation = on
+        log_rotation_age = 1d
+        log_rotation_size = 0
+        log_line_prefix = '%m [%p] '
+        log_timezone = 'UTC'
+        datestyle = 'iso, mdy'
+        timezone = 'UTC'
+        lc_messages = 'en_US.UTF-8'
+        lc_monetary = 'en_US.UTF-8'
+        lc_numeric = 'en_US.UTF-8'
+        lc_time = 'en_US.UTF-8'
+        default_text_search_config = 'pg_catalog.english'
+        wal_level = hot_standby
+        max_wal_senders = 3
+        wal_keep_segments = 64
+        hot_standby=on
+
+  - name: Remove file /var/lib/pgsql/10/data/pg_hba.conf
+    file:
+      path: /var/lib/pgsql/10/data/pg_hba.conf
+      state: absent
+
+  - name: Create configuration file /var/lib/pgsql/10/data/pg_hba.conf
+    blockinfile:
+      path: /var/lib/pgsql/10/data/pg_hba.conf
+      create: yes
+      owner: postgres
+      group: postgres
+      mode: 0600
+      block: |
+        local   all             all                                     peer
+        host    all             all             127.0.0.1/32            ident
+        host    all             all             ::1/128                 ident
+        local   replication     all                                     peer
+        host    replication     all             127.0.0.1/32            ident
+        host    replication     all             ::1/128                 ident
+        host    all             all             192.168.0.20/24         md5
+        host    replication  repl_user          192.168.0.31/32         md5
+
+  - name: Enable service postgresql
+    service:
+      name: postgresql-10
+      enabled: yes
+    tags: service
+
+  - name: Start service postgresql
+    service:
+      name: postgresql-10
+      state: started
+      enabled: yes
+    register: service_enable
+    tags: service
+
+  - name: Add user odoo with a bash shell
+    user:
+      name: odoo
+
+  - name: Ensure we have access from the repl_user user
+    become_user: postgres
+    postgresql_user:
+      name: repl_user
+      password: repl_user
+      state: present
+      role_attr_flags: REPLICATION
+
+  - name: Ensure we have access from the odoo user
+    become_user: postgres
+    postgresql_user:
+      name: odoo
+      password: odoo
+      state: present
+
+  - name: Create odoo db
+    become_user: postgres
+    postgresql_db:
+      name: odoo
+      owner: odoo
+      lc_collate: 'en_US.UTF-8'
+      lc_ctype: 'en_US.UTF-8'
+
+  - name: Create odoo_session db
+    become_user: postgres
+    postgresql_db:
+      name: odoo_session
+      owner: odoo
+      lc_collate: 'en_US.UTF-8'
+      lc_ctype: 'en_US.UTF-8'

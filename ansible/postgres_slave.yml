@@ -1,0 +1,59 @@
+---
+- hosts: all
+  become: True
+  gather_facts: True
+
+  tasks:
+
+  - include_tasks: common.yml
+
+  - include_tasks: postgres_common.yml
+
+  - name: Create root pgpass file
+    blockinfile:
+      path: /root/.pgpass
+      create: yes
+      owner: root
+      group: root
+      mode: 0600
+      block: |
+        192.168.0.30:*:*:repl_user:repl_user
+
+  - name: Get data from Postgres Master
+    command: pg_basebackup -h 192.168.0.30 -U repl_user -p 5432 -D /var/lib/pgsql/10/data -P -Xs -R
+
+  - name: Remove file /var/lib/pgsql/10/data/recovery.conf
+    file:
+      path: /var/lib/pgsql/10/data/recovery.conf
+      state: absent
+
+  - name: Create configuration file /var/lib/pgsql/10/data/recovery.conf
+    blockinfile:
+      path: /var/lib/pgsql/10/data/recovery.conf
+      create: yes
+      owner: postgres
+      group: postgres
+      mode: 0600
+      block: |
+        standby_mode = 'on'
+        primary_conninfo = 'host=192.168.0.30 port=5432 user=repl_user password=repl_user application_name=postgres02'
+
+  - name: Change /var/lib/pgsql/10/data permissions
+    command: chmod 700 /var/lib/pgsql/10/data -R
+
+  - name: Change /var/lib/pgsql/10/data owner
+    command: chown postgres:postgres /var/lib/pgsql/10/data -R
+
+  - name: Enable service postgresql
+    service:
+      name: postgresql-10
+      enabled: yes
+    tags: service
+
+  - name: Start service postgresql
+    service:
+      name: postgresql-10
+      state: started
+      enabled: yes
+    register: service_enable
+    tags: service

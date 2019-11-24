@@ -1,0 +1,25 @@
+---
+- name: Install Docker Server
+  yum:
+    name:
+      - docker
+      - docker-compose
+    state: latest
+  tags: packages
+
+- name: Enable service docker
+  service:
+    name: docker
+    enabled: yes
+  tags: service
+
+- name: Start service docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  register: service_enable
+  tags: service
+
+- name: Pull odoo docker image
+  command: docker pull odoo:12.0
