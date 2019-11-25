@@ -107,6 +107,7 @@
                 proxy_set_header    X-Real-IP       $remote_addr;
                 proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header    X-Forwarded-Proto https;
+                proxy_pass_header   Set-Cookie;
             }
 
             # Redirect longpoll requests to odoo longpolling port
@@ -114,7 +115,7 @@
                 proxy_pass http://odoochat;
             }
 
-            # cache static data 
+            # cache static data
             location ~* /web/static/ {
                 proxy_cache_valid 200 60m;
                 proxy_buffering on;
@@ -130,3 +131,6 @@
       enabled: yes
     register: service_enable
     tags: service
+
+  - name: restart nginx
+    command: service nginx restart
